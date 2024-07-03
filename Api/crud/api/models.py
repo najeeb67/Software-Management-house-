@@ -1,6 +1,7 @@
 from django.db import models
 
 
+
 class Employee(models.Model):
     profile_picture = models.ImageField(upload_to='images/')
     name = models.CharField(max_length=100)
@@ -26,3 +27,23 @@ class Projects(models.Model):
     def __str__(self):
         return self.project_name
 
+
+class Attendance(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    date = models.DateField()
+    time_in = models.TimeField()
+    time_out = models.TimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.time_out <= self.time_in:
+            return ValidationError('Time out must be later than time in.')
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        
+    class Meta:
+        unique_togather = ("Employee", "date")

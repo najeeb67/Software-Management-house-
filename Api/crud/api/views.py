@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse , JsonResponse , HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 import json
-from .models import Employee , Projects
+from .models import Employee , Projects , Attendance
 from django.shortcuts import get_object_or_404 
 
 @csrf_exempt
@@ -162,3 +162,36 @@ def delete_project(request, project_id):
         except Projects.DoesNotExist:
             return JsonResponse({"message":"Something issue"}, status = 401)
     return HttpResponse("invaild method")
+
+
+@csrf_exempt
+def make_attendance(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            employee_id = data.get('employee_id')
+            date = data.get('date')
+            time_in = data.get('time_in')
+            time_out = data.get('time_out')
+
+            if Attendance.objects.filter(employee_id=employee_id, date=date).exists():
+                return JsonResponse({"error": "Attendance already marked for this employee on this date"}, status=400)
+
+            employee = get_object_or_404(Employee, id=employee_id)
+
+            add_attendance = Attendance.objects.create(
+                employee=employee,
+                date=date,
+                time_in=time_in,
+                time_out=time_out
+            )
+            add_attendance.save()
+            return JsonResponse({"message": "Attendance marked successfully"})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    else:
+        return HttpResponse('Invalid method', status=405)
+        
+        
